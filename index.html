@@ -2,8 +2,8 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>بازی زامبی تلگرام</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>مینی‌اپ زامبی‌کُش</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
@@ -12,50 +12,82 @@
             font-family: Tahoma, sans-serif;
             text-align: center;
             margin: 0;
-            padding: 10px;
+            padding: 5px;
+            overflow: hidden;
+        }
+        h2 {
+            margin: 5px 0;
+            font-size: 18px;
         }
         canvas {
             background-color: #1e1e1e;
-            border: 3px solid #333;
-            box-shadow: 0 0 15px rgba(0,0,0,0.8);
-            max-width: 100%;
+            border: 2px solid #444;
+            box-shadow: 0 0 10px rgba(0,0,0,0.8);
+            width: 100%;
+            max-width: 400px;
             height: auto;
+            touch-action: none;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .control-btn {
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .control-btn:active {
+            background-color: #555;
         }
     </style>
 </head>
 <body>
 
     <h2>مینی‌اپ زامبی‌کُش</h2>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <p>با کلیدهای جهتی حرکت کنید و با کلیک ماوس شلیک کنید!</p>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    
+    <div class="controls">
+        <button class="control-btn" id="leftBtn">← چپ</button>
+        <button class="control-btn" id="upBtn">↑ بالا</button>
+        <button class="control-btn" id="downBtn">↓ پایین</button>
+        <button class="control-btn" id="rightBtn">راست →</button>
+    </div>
+    <p style="font-size: 12px; margin-top: 5px;">برای شلیک روی صفحه بازی ضربه بزنید!</p>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        // اتصال به تلگرام وب‌اپ (در صورت باز شدن داخل تلگرام)
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
             window.Telegram.WebApp.expand();
         }
 
-        let player = { x: 400, y: 300, size: 40, speed: 5, color: "#8B4513" };
+        let player = { x: 180, y: 180, size: 30, speed: 4, color: "#8B4513" };
         let zombies = [];
         let bullets = [];
         let score = 0;
         let gameOver = false;
         let keys = {};
 
-        const maxZombies = 5;
+        const maxZombies = 4;
 
         function spawnZombie() {
             let side = Math.floor(Math.random() * 4);
             let x, y;
-            if (side === 0) { x = Math.random() * canvas.width; y = -50; }
-            else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 50; }
-            else if (side === 2) { x = -50; y = Math.random() * canvas.height; }
-            else { x = canvas.width + 50; y = Math.random() * canvas.height; }
-            return { x: x, y: y, size: 40, speed: 2, color: "#FF3232" };
+            if (side === 0) { x = Math.random() * canvas.width; y = -40; }
+            else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 40; }
+            else if (side === 2) { x = -40; y = Math.random() * canvas.height; }
+            else { x = canvas.width + 40; y = Math.random() * canvas.height; }
+            return { x: x, y: y, size: 30, speed: 1.8, color: "#FF3232" };
         }
 
         function resetGame() {
@@ -77,37 +109,52 @@
         });
         window.addEventListener("keyup", (e) => { keys[e.key] = false; });
 
-        // شلیک با کلیک ماوس
+        // کنترل‌های لمسی دکمه‌ها
+        function setupTouchButton(id, keyName) {
+            const btn = document.getElementById(id);
+            btn.addEventListener("touchstart", (e) => { e.preventDefault(); keys[keyName] = true; });
+            btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[keyName] = false; });
+            btn.addEventListener("mousedown", () => { keys[keyName] = true; });
+            btn.addEventListener("mouseup", () => { keys[keyName] = false; });
+        }
+
+        setupTouchButton("leftBtn", "ArrowLeft");
+        setupTouchButton("rightBtn", "ArrowRight");
+        setupTouchButton("upBtn", "ArrowUp");
+        setupTouchButton("downBtn", "ArrowDown");
+
+        // شلیک با لمس صفحه یا کلیک
         canvas.addEventListener("click", (e) => {
-            if (gameOver) return;
+            if (gameOver) {
+                resetGame();
+                return;
+            }
             const rect = canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
 
             let pCenterX = player.x + player.size / 2;
             let pCenterY = player.y + player.size / 2;
 
-            let angle = Math.atan2(mouseY - pCenterY, mouseX - pCenterX);
-            let speed = 8;
+            let angle = Math.atan2(clickY - pCenterY, clickX - pCenterX);
+            let speed = 7;
             bullets.push({
                 x: pCenterX,
                 y: pCenterY,
                 dx: Math.cos(angle) * speed,
                 dy: Math.sin(angle) * speed,
-                size: 8
+                size: 6
             });
         });
 
         function update() {
             if (gameOver) return;
 
-            // حرکت بازیکن
             if ((keys["ArrowLeft"] || keys["a"]) && player.x > 0) player.x -= player.speed;
             if ((keys["ArrowRight"] || keys["d"]) && player.x < canvas.width - player.size) player.x += player.speed;
             if ((keys["ArrowUp"] || keys["w"]) && player.y > 0) player.y -= player.speed;
             if ((keys["ArrowDown"] || keys["s"]) && player.y < canvas.height - player.size) player.y += player.speed;
 
-            // حرکت زامبی‌ها و بررسی برخورد با بازیکن
             for (let zombie of zombies) {
                 let dx = player.x - zombie.x;
                 let dy = player.y - zombie.y;
@@ -117,7 +164,6 @@
                     zombie.y += (dy / dist) * zombie.speed;
                 }
 
-                // برخورد با پلیر (گیم اور)
                 if (
                     player.x < zombie.x + zombie.size &&
                     player.x + player.size > zombie.x &&
@@ -128,7 +174,6 @@
                 }
             }
 
-            // حرکت و برخورد تیرها
             for (let i = bullets.length - 1; i >= 0; i--) {
                 let b = bullets[i];
                 b.x += b.dx;
@@ -139,7 +184,6 @@
                     continue;
                 }
 
-                // بررسی برخورد تیر به زامبی
                 for (let j = zombies.length - 1; j >= 0; j--) {
                     let z = zombies[j];
                     if (
@@ -160,17 +204,14 @@
             ctx.fillStyle = "#1e1e1e";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // رسم زامبی‌ها
             for (let z of zombies) {
                 ctx.fillStyle = z.color;
                 ctx.fillRect(z.x, z.y, z.size, z.size);
             }
 
-            // رسم بازیکن
             ctx.fillStyle = player.color;
             ctx.fillRect(player.x, player.y, player.size, player.size);
 
-            // رسم تیرها
             ctx.fillStyle = "#FFFF00";
             for (let b of bullets) {
                 ctx.beginPath();
@@ -178,24 +219,22 @@
                 ctx.fill();
             }
 
-            // نمایش امتیاز
             ctx.fillStyle = "white";
-            ctx.font = "20px Tahoma";
-            ctx.fillText("Score: " + score, 20, 30);
+            ctx.font = "16px Tahoma";
+            ctx.fillText("Score: " + score, 15, 25);
 
-            // صفحه گیم اور
             if (gameOver) {
-                ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+                ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                 ctx.fillStyle = "#FF0000";
-                ctx.font = "bold 40px Tahoma";
+                ctx.font = "bold 30px Tahoma";
                 ctx.textAlign = "center";
                 ctx.fillText("GAME OVER!", canvas.width / 2, canvas.height / 2 - 20);
 
                 ctx.fillStyle = "#FFFFFF";
-                ctx.font = "20px Tahoma";
-                ctx.fillText("کلید 'R' را برای شروع مجدد بزنید", canvas.width / 2, canvas.height / 2 + 30);
+                ctx.font = "16px Tahoma";
+                ctx.fillText("برای شروع مجدد ضربه بزنید", canvas.width / 2, canvas.height / 2 + 20);
                 ctx.textAlign = "left";
             }
         }
