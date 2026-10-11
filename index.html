@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>مینی‌اپ زامبی‌کُش حرفه‌ای</title>
+    <title>مینی‌اپ زامبی‌کُش هوشمند</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
@@ -16,21 +17,24 @@
             overflow: hidden;
             touch-action: none;
         }
+
         h2 {
             margin: 5px 0;
             font-size: 16px;
             color: #ff4757;
             text-shadow: 0 0 5px rgba(255, 71, 87, 0.5);
         }
+
         canvas {
             background-color: #181818;
             border: 2px solid #333;
             border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.9);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.9);
             width: 100%;
             max-width: 380px;
             height: auto;
         }
+
         .controls {
             display: grid;
             grid-template-columns: repeat(3, 60px);
@@ -38,6 +42,7 @@
             gap: 8px;
             margin-top: 8px;
         }
+
         .control-btn {
             background-color: #2f3542;
             color: white;
@@ -47,20 +52,25 @@
             border-radius: 10px;
             cursor: pointer;
             user-select: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
+
         .control-btn:active {
             background-color: #ff4757;
             transform: translateY(2px);
         }
-        .empty { visibility: hidden; }
+
+        .empty {
+            visibility: hidden;
+        }
     </style>
 </head>
+
 <body>
 
-    <h2>🔥 زامبی‌کُش تلگرام 🔥</h2>
+    <h2>🔥 زامبی‌کُش هوشمند تلگرام 🔥</h2>
     <canvas id="gameCanvas" width="380" height="380"></canvas>
-    
+
     <div class="controls">
         <div class="empty"></div>
         <button class="control-btn" id="upBtn">⬆️</button>
@@ -98,7 +108,7 @@
                 else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 40; }
                 else if (side === 2) { x = -40; y = Math.random() * canvas.height; }
                 else { x = canvas.width + 40; y = Math.random() * canvas.height; }
-                
+
                 zombies.push({
                     x: x, y: y,
                     size: 26,
@@ -131,7 +141,7 @@
             const btn = document.getElementById(id);
             const activate = (e) => { e.preventDefault(); keys[keyName] = true; };
             const deactivate = (e) => { e.preventDefault(); keys[keyName] = false; };
-            
+
             btn.addEventListener("touchstart", activate);
             btn.addEventListener("touchend", deactivate);
             btn.addEventListener("mousedown", activate);
@@ -143,20 +153,35 @@
         setupTouchButton("upBtn", "ArrowUp");
         setupTouchButton("downBtn", "ArrowDown");
 
-        // شلیک با لمس صفحه
+        // شلیک خودکار به نزدیک‌ترین زامبی با لمس صفحه
         canvas.addEventListener("click", (e) => {
             if (gameOver) {
                 resetGame();
                 return;
             }
-            const rect = canvas.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const clickY = e.clientY - rect.top;
+
+            if (zombies.length === 0) return;
 
             let pCenterX = player.x + player.size / 2;
             let pCenterY = player.y + player.size / 2;
 
-            let angle = Math.atan2(clickY - pCenterY, clickX - pCenterX);
+            // پیدا کردن نزدیک‌ترین زامبی
+            let closestZombie = zombies[0];
+            let minDist = Math.hypot(closestZombie.x - pCenterX, closestZombie.y - pCenterY);
+
+            for (let i = 1; i < zombies.length; i++) {
+                let dist = Math.hypot(zombies[i].x - pCenterX, zombies[i].y - pCenterY);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestZombie = zombies[i];
+                }
+            }
+
+            // محاسبه زاویه به سمت نزدیک‌ترین زامبی
+            let zCenterX = closestZombie.x + closestZombie.size / 2;
+            let zCenterY = closestZombie.y + closestZombie.size / 2;
+            let angle = Math.atan2(zCenterY - pCenterY, zCenterX - pCenterX);
+
             let speed = 8;
             bullets.push({
                 x: pCenterX,
@@ -170,13 +195,11 @@
         function update() {
             if (gameOver) return;
 
-            // حرکت بازیکن
             if ((keys["ArrowLeft"] || keys["a"]) && player.x > 0) player.x -= player.speed;
             if ((keys["ArrowRight"] || keys["d"]) && player.x < canvas.width - player.size) player.x += player.speed;
             if ((keys["ArrowUp"] || keys["w"]) && player.y > 0) player.y -= player.speed;
             if ((keys["ArrowDown"] || keys["s"]) && player.y < canvas.height - player.size) player.y += player.speed;
 
-            // حرکت زامبی‌ها
             for (let zombie of zombies) {
                 let dx = player.x - zombie.x;
                 let dy = player.y - zombie.y;
@@ -186,7 +209,6 @@
                     zombie.y += (dy / dist) * zombie.speed;
                 }
 
-                // باختن
                 if (
                     player.x < zombie.x + zombie.size &&
                     player.x + player.size > zombie.x &&
@@ -201,7 +223,6 @@
                 }
             }
 
-            // مدیریت تیرها
             for (let i = bullets.length - 1; i >= 0; i--) {
                 let b = bullets[i];
                 b.x += b.dx;
@@ -226,7 +247,6 @@
                 }
             }
 
-            // چک کردن رفتن به موج بعدی
             if (zombies.length === 0) {
                 wave++;
                 spawnZombiesForWave();
@@ -237,7 +257,6 @@
             ctx.fillStyle = "#181818";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // رسم زامبی‌ها
             for (let z of zombies) {
                 ctx.fillStyle = z.color;
                 ctx.beginPath();
@@ -245,13 +264,11 @@
                 ctx.fill();
             }
 
-            // رسم بازیکن
             ctx.fillStyle = player.color;
             ctx.beginPath();
             ctx.roundRect(player.x, player.y, player.size, player.size, 6);
             ctx.fill();
 
-            // رسم تیرها
             ctx.fillStyle = "#ffeaa7";
             for (let b of bullets) {
                 ctx.beginPath();
@@ -259,13 +276,11 @@
                 ctx.fill();
             }
 
-            // رابط کاربری بالا صفحه داخل بوم
             ctx.fillStyle = "white";
             ctx.font = "bold 14px Tahoma";
             ctx.fillText("امتیاز: " + score, 15, 25);
             ctx.fillText("موج: " + wave, canvas.width - 60, 25);
 
-            // صفحه گیم اور
             if (gameOver) {
                 ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -279,7 +294,7 @@
                 ctx.font = "16px Tahoma";
                 ctx.fillText("امتیاز نهایی: " + score, canvas.width / 2, canvas.height / 2 + 5);
                 ctx.fillText("رکورد شما: " + highScore, canvas.width / 2, canvas.height / 2 + 35);
-                
+
                 ctx.fillStyle = "#2ed573";
                 ctx.font = "14px Tahoma";
                 ctx.fillText("برای شروع مجدد ضربه بزنید", canvas.width / 2, canvas.height / 2 + 75);
@@ -296,4 +311,5 @@
         loop();
     </script>
 </body>
+
 </html>
