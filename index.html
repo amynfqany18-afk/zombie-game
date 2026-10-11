@@ -1,73 +1,74 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>مینی‌اپ زامبی‌کُش</title>
+    <title>مینی‌اپ زامبی‌کُش حرفه‌ای</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
-            background-color: #1a1a1a;
+            background-color: #0f0f0f;
             color: #ffffff;
             font-family: Tahoma, sans-serif;
             text-align: center;
             margin: 0;
             padding: 5px;
             overflow: hidden;
-        }
-
-        h2 {
-            margin: 5px 0;
-            font-size: 18px;
-        }
-
-        canvas {
-            background-color: #1e1e1e;
-            border: 2px solid #444;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
-            width: 100%;
-            max-width: 400px;
-            height: auto;
             touch-action: none;
         }
-
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .control-btn {
-            background-color: #333;
-            color: white;
-            border: 1px solid #555;
-            padding: 12px 20px;
+        h2 {
+            margin: 5px 0;
             font-size: 16px;
-            border-radius: 8px;
+            color: #ff4757;
+            text-shadow: 0 0 5px rgba(255, 71, 87, 0.5);
+        }
+        canvas {
+            background-color: #181818;
+            border: 2px solid #333;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.9);
+            width: 100%;
+            max-width: 380px;
+            height: auto;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .control-btn {
+            background-color: #2f3542;
+            color: white;
+            border: 1px solid #57606f;
+            padding: 12px 0;
+            font-size: 18px;
+            border-radius: 10px;
             cursor: pointer;
             user-select: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
-
         .control-btn:active {
-            background-color: #555;
+            background-color: #ff4757;
+            transform: translateY(2px);
         }
+        .empty { visibility: hidden; }
     </style>
 </head>
-
 <body>
 
-    <h2>مینی‌اپ زامبی‌کُش</h2>
-    <canvas id="gameCanvas" width="400" height="400"></canvas>
-
+    <h2>🔥 زامبی‌کُش تلگرام 🔥</h2>
+    <canvas id="gameCanvas" width="380" height="380"></canvas>
+    
     <div class="controls">
-        <button class="control-btn" id="leftBtn">← چپ</button>
-        <button class="control-btn" id="upBtn">↑ بالا</button>
-        <button class="control-btn" id="downBtn">↓ پایین</button>
-        <button class="control-btn" id="rightBtn">راست →</button>
+        <div class="empty"></div>
+        <button class="control-btn" id="upBtn">⬆️</button>
+        <div class="empty"></div>
+        <button class="control-btn" id="leftBtn">⬅️</button>
+        <button class="control-btn" id="downBtn">⬇️</button>
+        <button class="control-btn" id="rightBtn">➡️</button>
     </div>
-    <p style="font-size: 12px; margin-top: 5px;">برای شلیک روی صفحه بازی ضربه بزنید!</p>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -78,33 +79,42 @@
             window.Telegram.WebApp.expand();
         }
 
-        let player = { x: 180, y: 180, size: 30, speed: 4, color: "#8B4513" };
+        let player = { x: 170, y: 170, size: 28, speed: 4.5, color: "#2ed573" };
         let zombies = [];
         let bullets = [];
         let score = 0;
+        let highScore = localStorage.getItem("zombieHighScore") || 0;
+        let wave = 1;
         let gameOver = false;
         let keys = {};
 
-        const maxZombies = 4;
-
-        function spawnZombie() {
-            let side = Math.floor(Math.random() * 4);
-            let x, y;
-            if (side === 0) { x = Math.random() * canvas.width; y = -40; }
-            else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 40; }
-            else if (side === 2) { x = -40; y = Math.random() * canvas.height; }
-            else { x = canvas.width + 40; y = Math.random() * canvas.height; }
-            return { x: x, y: y, size: 30, speed: 1.8, color: "#FF3232" };
+        function spawnZombiesForWave() {
+            zombies = [];
+            let count = 3 + wave * 2;
+            for (let i = 0; i < count; i++) {
+                let side = Math.floor(Math.random() * 4);
+                let x, y;
+                if (side === 0) { x = Math.random() * canvas.width; y = -40; }
+                else if (side === 1) { x = Math.random() * canvas.width; y = canvas.height + 40; }
+                else if (side === 2) { x = -40; y = Math.random() * canvas.height; }
+                else { x = canvas.width + 40; y = Math.random() * canvas.height; }
+                
+                zombies.push({
+                    x: x, y: y,
+                    size: 26,
+                    speed: 1.5 + (wave * 0.2),
+                    color: wave % 2 === 0 ? "#ff4757" : "#ffa502"
+                });
+            }
         }
 
         function resetGame() {
-            player.x = canvas.width / 2;
-            player.y = canvas.height / 2;
-            zombies = [];
-            for (let i = 0; i < maxZombies; i++) zombies.push(spawnZombie());
-            bullets = [];
+            player.x = canvas.width / 2 - player.size / 2;
+            player.y = canvas.height / 2 - player.size / 2;
             score = 0;
+            wave = 1;
             gameOver = false;
+            spawnZombiesForWave();
         }
 
         resetGame();
@@ -119,10 +129,13 @@
         // کنترل‌های لمسی دکمه‌ها
         function setupTouchButton(id, keyName) {
             const btn = document.getElementById(id);
-            btn.addEventListener("touchstart", (e) => { e.preventDefault(); keys[keyName] = true; });
-            btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[keyName] = false; });
-            btn.addEventListener("mousedown", () => { keys[keyName] = true; });
-            btn.addEventListener("mouseup", () => { keys[keyName] = false; });
+            const activate = (e) => { e.preventDefault(); keys[keyName] = true; };
+            const deactivate = (e) => { e.preventDefault(); keys[keyName] = false; };
+            
+            btn.addEventListener("touchstart", activate);
+            btn.addEventListener("touchend", deactivate);
+            btn.addEventListener("mousedown", activate);
+            btn.addEventListener("mouseup", deactivate);
         }
 
         setupTouchButton("leftBtn", "ArrowLeft");
@@ -130,7 +143,7 @@
         setupTouchButton("upBtn", "ArrowUp");
         setupTouchButton("downBtn", "ArrowDown");
 
-        // شلیک با لمس صفحه یا کلیک
+        // شلیک با لمس صفحه
         canvas.addEventListener("click", (e) => {
             if (gameOver) {
                 resetGame();
@@ -144,7 +157,7 @@
             let pCenterY = player.y + player.size / 2;
 
             let angle = Math.atan2(clickY - pCenterY, clickX - pCenterX);
-            let speed = 7;
+            let speed = 8;
             bullets.push({
                 x: pCenterX,
                 y: pCenterY,
@@ -157,11 +170,13 @@
         function update() {
             if (gameOver) return;
 
+            // حرکت بازیکن
             if ((keys["ArrowLeft"] || keys["a"]) && player.x > 0) player.x -= player.speed;
             if ((keys["ArrowRight"] || keys["d"]) && player.x < canvas.width - player.size) player.x += player.speed;
             if ((keys["ArrowUp"] || keys["w"]) && player.y > 0) player.y -= player.speed;
             if ((keys["ArrowDown"] || keys["s"]) && player.y < canvas.height - player.size) player.y += player.speed;
 
+            // حرکت زامبی‌ها
             for (let zombie of zombies) {
                 let dx = player.x - zombie.x;
                 let dy = player.y - zombie.y;
@@ -171,6 +186,7 @@
                     zombie.y += (dy / dist) * zombie.speed;
                 }
 
+                // باختن
                 if (
                     player.x < zombie.x + zombie.size &&
                     player.x + player.size > zombie.x &&
@@ -178,9 +194,14 @@
                     player.y + player.size > zombie.y
                 ) {
                     gameOver = true;
+                    if (score > highScore) {
+                        highScore = score;
+                        localStorage.setItem("zombieHighScore", highScore);
+                    }
                 }
             }
 
+            // مدیریت تیرها
             for (let i = bullets.length - 1; i >= 0; i--) {
                 let b = bullets[i];
                 b.x += b.dx;
@@ -199,49 +220,69 @@
                     ) {
                         bullets.splice(i, 1);
                         zombies.splice(j, 1);
-                        score += 1;
-                        zombies.push(spawnZombie());
+                        score += 10;
                         break;
                     }
                 }
             }
+
+            // چک کردن رفتن به موج بعدی
+            if (zombies.length === 0) {
+                wave++;
+                spawnZombiesForWave();
+            }
         }
 
         function draw() {
-            ctx.fillStyle = "#1e1e1e";
+            ctx.fillStyle = "#181818";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+            // رسم زامبی‌ها
             for (let z of zombies) {
                 ctx.fillStyle = z.color;
-                ctx.fillRect(z.x, z.y, z.size, z.size);
+                ctx.beginPath();
+                ctx.roundRect(z.x, z.y, z.size, z.size, 6);
+                ctx.fill();
             }
 
+            // رسم بازیکن
             ctx.fillStyle = player.color;
-            ctx.fillRect(player.x, player.y, player.size, player.size);
+            ctx.beginPath();
+            ctx.roundRect(player.x, player.y, player.size, player.size, 6);
+            ctx.fill();
 
-            ctx.fillStyle = "#FFFF00";
+            // رسم تیرها
+            ctx.fillStyle = "#ffeaa7";
             for (let b of bullets) {
                 ctx.beginPath();
                 ctx.arc(b.x, b.y, b.size / 2, 0, Math.PI * 2);
                 ctx.fill();
             }
 
+            // رابط کاربری بالا صفحه داخل بوم
             ctx.fillStyle = "white";
-            ctx.font = "16px Tahoma";
-            ctx.fillText("Score: " + score, 15, 25);
+            ctx.font = "bold 14px Tahoma";
+            ctx.fillText("امتیاز: " + score, 15, 25);
+            ctx.fillText("موج: " + wave, canvas.width - 60, 25);
 
+            // صفحه گیم اور
             if (gameOver) {
-                ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+                ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                ctx.fillStyle = "#FF0000";
-                ctx.font = "bold 30px Tahoma";
+                ctx.fillStyle = "#ff4757";
+                ctx.font = "bold 28px Tahoma";
                 ctx.textAlign = "center";
-                ctx.fillText("GAME OVER!", canvas.width / 2, canvas.height / 2 - 20);
+                ctx.fillText("بازی تمام شد!", canvas.width / 2, canvas.height / 2 - 30);
 
-                ctx.fillStyle = "#FFFFFF";
+                ctx.fillStyle = "#ffffff";
                 ctx.font = "16px Tahoma";
-                ctx.fillText("برای شروع مجدد ضربه بزنید", canvas.width / 2, canvas.height / 2 + 20);
+                ctx.fillText("امتیاز نهایی: " + score, canvas.width / 2, canvas.height / 2 + 5);
+                ctx.fillText("رکورد شما: " + highScore, canvas.width / 2, canvas.height / 2 + 35);
+                
+                ctx.fillStyle = "#2ed573";
+                ctx.font = "14px Tahoma";
+                ctx.fillText("برای شروع مجدد ضربه بزنید", canvas.width / 2, canvas.height / 2 + 75);
                 ctx.textAlign = "left";
             }
         }
@@ -255,5 +296,4 @@
         loop();
     </script>
 </body>
-
 </html>
